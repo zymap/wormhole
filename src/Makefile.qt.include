@@ -2,11 +2,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-<<<<<<< HEAD
 bin_PROGRAMS += qt/wormholed-qt
-=======
-bin_PROGRAMS += qt/wormhole-qt
->>>>>>> c1404ba1bd40873a5347cda60cc1f3cf9721880f
 EXTRA_LIBRARIES += qt/libbitcoinqt.a
 
 # bitcoin qt core #
