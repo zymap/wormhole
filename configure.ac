@@ -14,11 +14,11 @@ AC_CONFIG_HEADERS([src/config/bitcoin-config.h])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux/m4])
 
-BITCOIN_DAEMON_NAME=wormhole
+BITCOIN_DAEMON_NAME=wormholed
 BITCOIN_GUI_NAME=wormholed-qt
-BITCOIN_CLI_NAME=wormhole-cli
-BITCOIN_TX_NAME=wormhole-tx
-BITCOIN_SEEDER_NAME=wormhole-seeder
+BITCOIN_CLI_NAME=wormholed-cli
+BITCOIN_TX_NAME=wormholed-tx
+BITCOIN_SEEDER_NAME=wormholed-seeder
 
 AC_CANONICAL_HOST
 
