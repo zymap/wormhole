@@ -29,6 +29,7 @@
 #include "omnicore/version.h"
 #include "omnicore/walletcache.h"
 #include "omnicore/wallettxs.h"
+#include "omnicore/rpcvalues.h"
 
 #include "consensus/validation.h"
 #include "net.h"
@@ -485,7 +486,7 @@ int64_t mastercore::getTotalTokens(uint32_t propertyId, int64_t* n_owners_total)
         crowdsale = 1;
     }
 
-    if (property.manual || n_owners_total) {
+    if (property.manual || n_owners_total || propertyId == OMNI_PROPERTY_WHC) {
         for (std::unordered_map<std::string, CMPTally>::const_iterator it = mp_tally_map.begin(); it != mp_tally_map.end(); ++it) {
             const CMPTally& tally = it->second;
 
@@ -503,7 +504,7 @@ int64_t mastercore::getTotalTokens(uint32_t propertyId, int64_t* n_owners_total)
         totalTokens += cachedFee;
     }
 
-    if (property.fixed || crowdsale) {
+    if ((property.fixed || crowdsale) && propertyId != OMNI_PROPERTY_WHC) {
         totalTokens = property.num_tokens; // only valid for TX50
     }
 
@@ -864,7 +865,9 @@ static bool FillTxInputCache(const CTransaction& tx)
         if (!GetTransaction(GetConfig(), txIn.prevout.GetTxId(), txPrev, hashBlock, true)) {
             return false;
         }
-
+        if (txPrev.get()->vout.size() <= nOut){
+            return false;
+        }
         Coin newCoin(txPrev.get()->vout[nOut], 0, tx.IsCoinBase());
         view.AddCoin(txIn.prevout, newCoin, false);
 	}
@@ -3242,12 +3245,16 @@ void CMPSTOList::getRecipients(const uint256 txid, string filterAddress, UniValu
                       recipient.push_back(Pair("address", recipientAddress));
                       if(isPropertyDivisible(propertyId))
                       {
-				int type = getPropertyType(propertyId);
-                         recipient.push_back(Pair("amount", FormatDivisibleMP(amount, type)));
+                          int type = getPropertyType(propertyId);
+                          recipient.push_back(Pair("amount", FormatDivisibleMP(amount, type)));
                       }
                       else
                       {
-                         recipient.push_back(Pair("amount", FormatIndivisibleMP(amount)));
+                          if (propertyId == OMNI_PROPERTY_WHC)  {
+                              recipient.push_back(Pair("amount", FormatDivisibleMP(amount, PRICE_PRECISION)));
+                          }else{
+                              recipient.push_back(Pair("amount", FormatIndivisibleMP(amount)));
+                          }
                       }
                       *total += amount;
                       recipientArray->push_back(recipient);
@@ -3813,14 +3820,14 @@ int mastercore_handler_block_begin(int nBlockPrev, CBlockIndex const * pBlockInd
 }
 
 //change_101 add distribute WHC to burner.
-static void DistributeWHCToBurner(){
+static void DistributeWHCToBurner(int nblockNow){
     int maxHeight = 1;
     if (MainNet()){
-        maxHeight = chainActive.Height() - DISTRIBUTEHEIGHT;
+        maxHeight = nblockNow - DISTRIBUTEHEIGHT;
     } else if(TestNet()){
-        maxHeight = chainActive.Height() - DISTRIBUTEHEIGHTTEST;
+        maxHeight = nblockNow - DISTRIBUTEHEIGHTTEST;
     } else if (RegTest()){
-        maxHeight = chainActive.Height() - DISTRIBUTEHEIGHTREGTEST;
+        maxHeight = nblockNow - DISTRIBUTEHEIGHTREGTEST;
     }
 	maxHeight +=1;
 	
@@ -3853,8 +3860,8 @@ static void DistributeWHCToBurner(){
     }
 	PrintToLog("%s: chainActiveHeight: %d, maxHeight: %d, update entry num : %d\n",__func__, chainActive.Height(), maxHeight, update);
     if (update > 0){
-        CBlockIndex *tip = chainActive.Tip();
-        sp.update_block = *tip->phashBlock;
+        CBlockIndex *updateBlock = chainActive[nblockNow];
+        sp.update_block = *updateBlock->phashBlock;
         _my_sps->updateSP(OMNI_PROPERTY_WHC, sp);
     }
 }
@@ -3900,7 +3907,7 @@ int mastercore_handler_block_end(int nBlockNow, CBlockIndex const * pBlockIndex,
 
     // when the current tip height is greater than the burning height reach 100,
     // distribute  corresponding WHC property to burn BCH person.
-    DistributeWHCToBurner();
+    DistributeWHCToBurner(nBlockNow);
 
     // check that pending transactions are still in the mempool
     PendingCheck();

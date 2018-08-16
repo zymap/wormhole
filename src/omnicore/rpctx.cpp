@@ -54,8 +54,8 @@ UniValue whc_sendrawtx(const Config &config,const JSONRPCRequest &request)
             "\nResult:\n"
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendrawtx", "\"1MCHESTptvd2LnNp7wmr2sGTpRomteAkq8\" \"000000000000000100000000017d7840\" \"1EqTta1Rt8ixAA32DuC29oukbsSWU62qAV\"")
-            + HelpExampleRpc("whc_sendrawtx", "\"1MCHESTptvd2LnNp7wmr2sGTpRomteAkq8\", \"000000000000000100000000017d7840\", \"1EqTta1Rt8ixAA32DuC29oukbsSWU62qAV\"")
+            + HelpExampleCli("whc_sendrawtx", "\"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\" \"000000000000000100000000017d7840\" \"1EqTta1Rt8ixAA32DuC29oukbsSWU62qAV\"")
+            + HelpExampleRpc("whc_sendrawtx", "\"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\", \"000000000000000100000000017d7840\", \"1EqTta1Rt8ixAA32DuC29oukbsSWU62qAV\"")
         );
 
     std::string fromAddress = ParseAddress(request.params[0]);
@@ -85,7 +85,7 @@ UniValue whc_particrowsale(Config const&, JSONRPCRequest const& request)
 {
     if (request.fHelp || request.params.size() < 3 || request.params.size() > 5)
         throw runtime_error(
-            "whc_particrowsale \"fromaddress\" \"toaddress\" propertyid \"amount\" ( \"redeemaddress\" \"referenceamount\" )\n"
+            "whc_particrowsale \"fromaddress\" \"toaddress\" \"amount\" ( \"redeemaddress\" \"referenceamount\" )\n"
 
             "\nCreate and broadcast a participate crowsale transaction.\n"
 
@@ -100,13 +100,13 @@ UniValue whc_particrowsale(Config const&, JSONRPCRequest const& request)
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_particrowsale", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\" \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\"  \"100.0\"")
-            + HelpExampleRpc("whc_particrowsale", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\", \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\",  \"100.0\"")
+            + HelpExampleCli("whc_particrowsale", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\"  \"100.0\"")
+            + HelpExampleRpc("whc_particrowsale", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\",  \"100.0\"")
         );
     // obtain parameters & info
     std::string fromAddress = ParseAddress(request.params[0]);
     std::string toAddress = ParseAddress(request.params[1]);
-    int64_t amount = ParseAmount(request.params[2], PRICE_PRICISION);
+    int64_t amount = ParseAmount(request.params[2], PRICE_PRECISION);
     std::string redeemAddress = (request.params.size() > 3 && !ParseText(request.params[3]).empty()) ? ParseAddress(request.params[3]): "";
     int64_t referenceAmount = (request.params.size() > 4) ? ParseAmount(request.params[4], true): 0;
 
@@ -154,8 +154,8 @@ UniValue whc_send(const Config &config,const JSONRPCRequest &request)
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_send", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\" \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\" 1 \"100.0\"")
-            + HelpExampleRpc("whc_send", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\", \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\", 1, \"100.0\"")
+            + HelpExampleCli("whc_send", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\" 1 \"100.0\"")
+            + HelpExampleRpc("whc_send", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\", 1, \"100.0\"")
         );
 
     // obtain parameters & info
@@ -165,7 +165,7 @@ UniValue whc_send(const Config &config,const JSONRPCRequest &request)
     RequireExistingProperty(propertyId);
     int64_t amount;
     if (propertyId == OMNI_PROPERTY_WHC) {
-        amount = ParseAmount(request.params[3], PRICE_PRICISION);
+        amount = ParseAmount(request.params[3], PRICE_PRECISION);
     } else {
         amount = ParseAmount(request.params[3], getPropertyType(propertyId));
     }
@@ -208,7 +208,7 @@ UniValue whc_sendall(const Config &config,const JSONRPCRequest &request)
             "\nArguments:\n"
             "1. fromaddress          (string, required) the address to send from\n"
             "2. toaddress            (string, required) the address of the receiver\n"
-            "3. ecosystem            (number, required) the ecosystem of the tokens to send (1 for main ecosystem, 2 for test ecosystem)\n"
+            "3. ecosystem            (string, required) the ecosystem to create the tokens in, must be 1\n"
             "4. redeemaddress        (string, optional) an address that can spend the transaction dust (sender by default)\n"
             "5. referenceamount      (string, optional) a bitcoin amount that is sent to the receiver (minimal by default)\n"
 
@@ -216,8 +216,8 @@ UniValue whc_sendall(const Config &config,const JSONRPCRequest &request)
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendall", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\" \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\" 2")
-            + HelpExampleRpc("whc_sendall", "\"3M9qvHKtgARhqcMtM5cRT9VaiDJ5PSfQGY\", \"37FaKponF7zqoMLUjEiko25pDiuVH5YLEa\" 2")
+            + HelpExampleCli("whc_sendall", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\" 2")
+            + HelpExampleRpc("whc_sendall", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\" 2")
         );
 
     // obtain parameters & info
@@ -228,6 +228,7 @@ UniValue whc_sendall(const Config &config,const JSONRPCRequest &request)
     int64_t referenceAmount = (request.params.size() > 4) ? ParseAmount(request.params[4], true): 0;
 
     // perform checks
+    RequirePropertyEcosystem(ecosystem);
     RequireSaneReferenceAmount(referenceAmount);
 
     // create a payload for the transaction
@@ -255,14 +256,14 @@ UniValue whc_sendissuancecrowdsale(const Config &config,const JSONRPCRequest &re
 {
     if (request.fHelp || request.params.size() != 15)
         throw runtime_error(
-            "whc_sendissuancecrowdsale \"fromaddress\" ecosystem type previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\" propertyiddesired tokensperunit deadline ( earlybonus undefine ) totalNumber \n"
+            "whc_sendissuancecrowdsale \"fromaddress\" ecosystem precision previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\" propertyiddesired tokensperunit deadline earlybonus undefine totalNumber \n"
 
             "Create new tokens as crowdsale."
 
             "\nArguments:\n"
             "1. fromaddress          (string, required) the address to send from\n"
             "2. ecosystem            (string, required) the ecosystem to create the tokens in, must be 1\n"
-            "3. type                 (number, required) the pricision of the tokens to create:[0, 8]\n"
+            "3. property precision   (number, required) the precision of the tokens to create:[0, 8]\n"
             "4. previousid           (number, required) an identifier of a predecessor token (0 for new crowdsales)\n"
             "5. category             (string, required) a category for the new tokens (can be \"\")\n"
             "6. subcategory          (string, required) a subcategory for the new tokens  (can be \"\")\n"
@@ -280,8 +281,8 @@ UniValue whc_sendissuancecrowdsale(const Config &config,const JSONRPCRequest &re
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendissuancecrowdsale", "\"3JYd75REX3HXn1vAU83YuGfmiPXW7BpYXo\" 2 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\" 2 \"100\" 1483228800 30 2")
-            + HelpExampleRpc("whc_sendissuancecrowdsale", "\"3JYd75REX3HXn1vAU83YuGfmiPXW7BpYXo\", 2, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\", 2, \"100\", 1483228800, 30, 2")
+            + HelpExampleCli("whc_sendissuancecrowdsale", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" 1 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\" 1 \"100\" 1483228800 30 2 77868698")
+            + HelpExampleRpc("whc_sendissuancecrowdsale", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", 1, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\", 1, \"100\", 1483228800, 30, 2, 77868698")
         );
 
     // obtain parameters & info
@@ -295,13 +296,14 @@ UniValue whc_sendissuancecrowdsale(const Config &config,const JSONRPCRequest &re
     std::string url = ParseText(request.params[7]);
     std::string data = ParseText(request.params[8]);
     uint32_t propertyIdDesired = ParsePropertyId(request.params[9]);
-    int64_t numTokens = ParseAmount(request.params[10], PRICE_PRICISION);
+    int64_t numTokens = ParseAmount(request.params[10], PRICE_PRECISION);
     int64_t deadline = ParseDeadline(request.params[11]);
     uint8_t earlyBonus = ParseEarlyBirdBonus(request.params[12]);
     uint8_t issuerPercentage = ParseIssuerBonus(request.params[13]);
 	int64_t amount = ParseAmount(request.params[14], type);
     
 	// perform checks
+    RequireTokenPrice(numTokens);
     RequireIssuerPercentage(issuerPercentage);
     RequireCrowsDesireProperty(propertyIdDesired);
     RequirePropertyName(name);
@@ -334,14 +336,14 @@ UniValue whc_sendissuancefixed(const Config &config,const JSONRPCRequest &reques
 {
     if (request.fHelp || request.params.size() != 10)
         throw runtime_error(
-            "whc_sendissuancefixed \"fromaddress\" ecosystem type previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\" \"totalNumber\"\n"
+            "whc_sendissuancefixed \"fromaddress\" ecosystem precision previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\" \"totalNumber\"\n"
 
             "\nCreate new tokens with fixed supply.\n"
 
             "\nArguments:\n"
             "1. fromaddress          (string, required) the address to send from\n"
             "2. ecosystem            (string, required) the ecosystem to create the tokens in, must be 1\n"
-            "3. type                 (number, required) the pricision of the tokens to create:[0, 8]\n"
+            "3. property precision   (number, required) the precision of the tokens to create:[0, 8]\n"
             "4. previousid           (number, required) an identifier of a predecessor token (use 0 for new tokens)\n"
             "5. category             (string, required) a category for the new tokens (can be \"\")\n"
             "6. subcategory          (string, required) a subcategory for the new tokens  (can be \"\")\n"
@@ -354,8 +356,8 @@ UniValue whc_sendissuancefixed(const Config &config,const JSONRPCRequest &reques
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendissuancefixed", "\"3Ck2kEGLJtZw9ENj2tameMCtS3HB7uRar3\" 2 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\" \"1000000\"")
-            + HelpExampleRpc("whc_sendissuancefixed", "\"3Ck2kEGLJtZw9ENj2tameMCtS3HB7uRar3\", 2, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\", \"1000000\"")
+            + HelpExampleCli("whc_sendissuancefixed", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" 1 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\" \"1000000\"")
+            + HelpExampleRpc("whc_sendissuancefixed", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", 1, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\", \"1000000\"")
         );
 
     // obtain parameters & info
@@ -399,14 +401,14 @@ UniValue whc_sendissuancemanaged(const Config &config,const JSONRPCRequest &requ
 {
     if (request.fHelp || request.params.size() != 9)
         throw runtime_error(
-            "whc_sendissuancemanaged \"fromaddress\" ecosystem type previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\"\n"
+            "whc_sendissuancemanaged \"fromaddress\" ecosystem precision previousid \"category\" \"subcategory\" \"name\" \"url\" \"data\"\n"
 
             "\nCreate new tokens with manageable supply.\n"
 
             "\nArguments:\n"
             "1. fromaddress          (string, required) the address to send from\n"
             "2. ecosystem            (string, required) the ecosystem to create the tokens in, must be 1\n"
-            "3. type                 (number, required) the pricision of the tokens to create:[0, 8]\n"
+            "3. property precision   (number, required) the precision of the tokens to create:[0, 8]\n"
             "4. previousid           (number, required) an identifier of a predecessor token (use 0 for new tokens)\n"
             "5. category             (string, required) a category for the new tokens (can be \"\")\n"
             "6. subcategory          (string, required) a subcategory for the new tokens  (can be \"\")\n"
@@ -418,8 +420,8 @@ UniValue whc_sendissuancemanaged(const Config &config,const JSONRPCRequest &requ
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendissuancemanaged", "\"3HsJvhr9qzgRe3ss97b1QHs38rmaLExLcH\" 2 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\"")
-            + HelpExampleRpc("whc_sendissuancemanaged", "\"3HsJvhr9qzgRe3ss97b1QHs38rmaLExLcH\", 2, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\"")
+            + HelpExampleCli("whc_sendissuancemanaged", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" 1 1 0 \"Companies\" \"Bitcoin Mining\" \"Quantum Miner\" \"\" \"\"")
+            + HelpExampleRpc("whc_sendissuancemanaged", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", 1, 1, 0, \"Companies\", \"Bitcoin Mining\", \"Quantum Miner\", \"\", \"\"")
         );
 
     // obtain parameters & info
@@ -487,7 +489,7 @@ UniValue whc_sendsto(const Config &config,const JSONRPCRequest &request)
     RequireExistingProperty(propertyId);
     int64_t amount;
     if (propertyId == OMNI_PROPERTY_WHC){
-        amount = ParseAmount(request.params[2], PRICE_PRICISION);
+        amount = ParseAmount(request.params[2], PRICE_PRECISION);
     } else{
         amount = ParseAmount(request.params[2], getPropertyType(propertyId));
     }
@@ -545,15 +547,14 @@ UniValue whc_sendgrant(const Config &config,const JSONRPCRequest &request)
     std::string fromAddress = ParseAddress(request.params[0]);
     std::string toAddress = !ParseText(request.params[1]).empty() ? ParseAddress(request.params[1]): "";
     uint32_t propertyId = ParsePropertyId(request.params[2]);
-	int mtype = getPropertyType(propertyId);
-	RequirePropertyType(mtype);
-    int64_t amount = ParseAmount(request.params[3], mtype);
-    std::string memo = (request.params.size() > 4) ? ParseText(request.params[4]): "";
-
     // perform checks
     RequireExistingProperty(propertyId);
     RequireManagedProperty(propertyId);
     RequireTokenIssuer(fromAddress, propertyId);
+    int mtype = getPropertyType(propertyId);
+	RequirePropertyType(mtype);
+    int64_t amount = ParseAmount(request.params[3], mtype);
+    std::string memo = (request.params.size() > 4) ? ParseText(request.params[4]): "";
 
     // create a payload for the transaction
     std::vector<unsigned char> payload = CreatePayload_Grant(propertyId, amount, memo);
@@ -698,8 +699,8 @@ UniValue whc_sendchangeissuer(const Config &config,const JSONRPCRequest &request
             "\"hash\"                  (string) the hex-encoded transaction hash\n"
 
             "\nExamples:\n"
-            + HelpExampleCli("whc_sendchangeissuer", "\"1ARjWDkZ7kT9fwjPrjcQyvbXDkEySzKHwu\" \"3HTHRxu3aSDV4deakjC7VmsiUp7c6dfbvs\" 3")
-            + HelpExampleRpc("whc_sendchangeissuer", "\"1ARjWDkZ7kT9fwjPrjcQyvbXDkEySzKHwu\", \"3HTHRxu3aSDV4deakjC7VmsiUp7c6dfbvs\", 3")
+            + HelpExampleCli("whc_sendchangeissuer", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\" 3")
+            + HelpExampleRpc("whc_sendchangeissuer", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\", 3")
         );
 
     // obtain parameters & info
@@ -743,8 +744,8 @@ UniValue whc_burnbchgetwhc(const Config &config,const JSONRPCRequest &request)
                         "\nResult:\n"
                         "\"hash\"                  (string) the hex-encoded transaction hash\n"
                         "\nExamples:\n"
-                + HelpExampleCli("whc_burnbchgetwhc", "1, \"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
-                + HelpExampleRpc("whc_burnbchgetwhc", "1, \"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
+                + HelpExampleCli("whc_burnbchgetwhc", "1, \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\"")
+                + HelpExampleRpc("whc_burnbchgetwhc", "1, \"qqzy3s0ueaxkf8hcffhtgkgew8c7f7g85um9a2g74r\"")
         );
 
     // obtain parameters & info
@@ -874,7 +875,7 @@ static const CRPCCommand commands[] =
     { "omni layer (transaction creation)", "whc_sendclosecrowdsale",      &whc_sendclosecrowdsale,      false, {} },
     { "omni layer (transaction creation)", "whc_sendchangeissuer",        &whc_sendchangeissuer,        false, {} },
     { "omni layer (transaction creation)", "whc_sendall",                 &whc_sendall,                 false, {} },
-    { "omni layer (transaction creation)", "whc_particrowsale",                 &whc_particrowsale,                 false, {} },
+    { "omni layer (transaction creation)", "whc_particrowsale",           &whc_particrowsale,           false, {} },
 	/* depreciated: */
     { "hidden",                            "sendrawtx_MP",                 &whc_sendrawtx,               false, {} },
     { "hidden",                            "send_MP",                      &whc_send,                    false, {} },

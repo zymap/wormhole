@@ -1245,7 +1245,7 @@ int CMPTransaction::logicMath_BuyToken()
     pcrowdsale->incTokensIssuerCreated(tokens.second);
 
     // Data to pass to txFundraiserData
-    int64_t txdata[] = {(int64_t) nValue, blockTime, tokens.first, tokens.second};
+    int64_t txdata[] = {(int64_t)money, blockTime, tokens.first, tokens.second};
     std::vector<int64_t> txDataVec(txdata, txdata + sizeof(txdata) / sizeof(txdata[0]));
 
     // Insert data about crowdsale participation
@@ -1369,6 +1369,7 @@ int CMPTransaction::logicMath_SendToOwners()
     // ------------------------------------------
 
     assert(update_tally_map(sender, feeProperty, -transferFee, BALANCE));
+    assert(update_tally_map(burnwhc_address, OMNI_PROPERTY_WHC, transferFee, BALANCE));
     if (version == MP_TX_PKT_V0) {
         // v0 - do not credit the subtracted fee to any tally (ie burn the tokens)
     } else {
@@ -1425,6 +1426,12 @@ int CMPTransaction::logicMath_SendAll()
     // Special case: if can't find the receiver -- assume send to self!
     if (receiver.empty()) {
         receiver = sender;
+    }
+
+    //change_002
+    if (OMNI_PROPERTY_WHC != ecosystem) {
+        PrintToLog("%s(): rejected: invalid ecosystem: %d\n", __func__, (uint32_t) ecosystem);
+        return (PKT_ERROR_SP -21);
     }
 
     CMPTally* ptally = getTally(sender);
@@ -1870,6 +1877,7 @@ int CMPTransaction::logicMath_CreatePropertyFixed()
     assert(propertyId > 0);
     //change_002
     assert(update_tally_map(sender, OMNI_PROPERTY_WHC, -CREATE_TOKEN_FEE, BALANCE));
+    assert(update_tally_map(burnwhc_address, OMNI_PROPERTY_WHC, CREATE_TOKEN_FEE, BALANCE));
     assert(update_tally_map(sender, propertyId, nValue, BALANCE));
 
     NotifyTotalTokensChanged(propertyId, block);
@@ -1990,6 +1998,7 @@ int CMPTransaction::logicMath_CreatePropertyVariable()
     assert(propertyId > 0);
     //change_002
     assert(update_tally_map(sender, OMNI_PROPERTY_WHC, -CREATE_TOKEN_FEE, BALANCE));
+    assert(update_tally_map(burnwhc_address, OMNI_PROPERTY_WHC, CREATE_TOKEN_FEE, BALANCE));
     my_crowds.insert(std::make_pair(sender, CMPCrowd(propertyId, nValue, OMNI_PROPERTY_WHC, deadline, early_bird, percentage, 0, 0)));
 
     PrintToLog("CREATED CROWDSALE id: %d value: %d property: %d\n", propertyId, nValue, OMNI_PROPERTY_WHC);
@@ -2134,6 +2143,7 @@ int CMPTransaction::logicMath_CreatePropertyManaged()
     assert(propertyId > 0);
     //change_002
     assert(update_tally_map(sender, OMNI_PROPERTY_WHC, -CREATE_TOKEN_FEE, BALANCE));
+    assert(update_tally_map(burnwhc_address, OMNI_PROPERTY_WHC, CREATE_TOKEN_FEE, BALANCE));
 
     PrintToLog("CREATED MANUAL PROPERTY id: %d admin: %s\n", propertyId, sender);
 

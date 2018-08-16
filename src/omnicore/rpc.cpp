@@ -145,9 +145,9 @@ bool BalanceToJSON(const std::string& address, uint32_t property, UniValue& bala
         if (nFrozen != 0) balance_obj.push_back(Pair("frozen", FormatDivisibleMP(nFrozen, divisible)));
     } else {
         if(property == OMNI_PROPERTY_WHC){
-            balance_obj.push_back(Pair("balance", FormatDivisibleMP(nAvailable, PRICE_PRICISION)));
-            balance_obj.push_back(Pair("reserved", FormatDivisibleMP(nReserved, PRICE_PRICISION)));
-            if (nFrozen != 0) balance_obj.push_back(Pair("frozen", FormatDivisibleMP(nFrozen, PRICE_PRICISION)));
+            balance_obj.push_back(Pair("balance", FormatDivisibleMP(nAvailable, PRICE_PRECISION)));
+            balance_obj.push_back(Pair("reserved", FormatDivisibleMP(nReserved, PRICE_PRECISION)));
+            if (nFrozen != 0) balance_obj.push_back(Pair("frozen", FormatDivisibleMP(nFrozen, PRICE_PRECISION)));
         }else  {
             balance_obj.push_back(Pair("balance", FormatIndivisibleMP(nAvailable)));
             balance_obj.push_back(Pair("reserved", FormatIndivisibleMP(nReserved)));
@@ -362,7 +362,7 @@ UniValue whc_getfeeshare(const Config &config, const JSONRPCRequest &request)
             "\nReturns the percentage share of fees distribution applied to the wallet (default) or address (if supplied).\n"
             "\nArguments:\n"
             "1. address              (string, optional) retrieve the fee share for the supplied address\n"
-            "2. ecosystem            (number, optional) the ecosystem to check the fee share (1 for main ecosystem, 2 for test ecosystem)\n"
+            "2. ecosystem            (string, required) the ecosystem to create the tokens in, must be 1\n"
             "\nResult:\n"
             "[                       (array of JSON objects)\n"
             "  {\n"
@@ -372,8 +372,8 @@ UniValue whc_getfeeshare(const Config &config, const JSONRPCRequest &request)
             "  ...\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli("whc_getfeeshare", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\" 1")
-            + HelpExampleRpc("whc_getfeeshare", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\", 1")
+            + HelpExampleCli("whc_getfeeshare", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" 1")
+            + HelpExampleRpc("whc_getfeeshare", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", 1")
         );
 
     std::string address;
@@ -387,6 +387,7 @@ UniValue whc_getfeeshare(const Config &config, const JSONRPCRequest &request)
     }
     if (1 < request.params.size()) {
         ecosystem = ParseEcosystem(request.params[1]);
+        RequirePropertyEcosystem(ecosystem);
     }
 
     UniValue response(UniValue::VARR);
@@ -771,8 +772,8 @@ UniValue whc_getbalance(const Config &config, const JSONRPCRequest &request)
             "  \"reserved\" : \"n.nnnnnnnn\"   (string) the amount reserved by sell offers and accepts\n"
             "}\n"
             "\nExamples:\n"
-            + HelpExampleCli("whc_getbalance", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\" 1")
-            + HelpExampleRpc("whc_getbalance", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\", 1")
+            + HelpExampleCli("whc_getbalance", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\" 1")
+            + HelpExampleRpc("whc_getbalance", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\", 1")
         );
 
     std::string address = ParseAddress(request.params[0]);
@@ -861,8 +862,8 @@ UniValue whc_getallbalancesforaddress(const Config &config, const JSONRPCRequest
             "  ...\n"
             "]\n"
             "\nExamples:\n"
-            + HelpExampleCli("whc_getallbalancesforaddress", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
-            + HelpExampleRpc("whc_getallbalancesforaddress", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
+            + HelpExampleCli("whc_getallbalancesforaddress", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\"")
+            + HelpExampleRpc("whc_getallbalancesforaddress", "\"qqxyplcfuxnm9z4usma2wmnu4kw9mexeug580mc3lx\"")
         );
 
     std::string address = ParseAddress(request.params[0]);
@@ -934,7 +935,9 @@ UniValue whc_getproperty(const Config &config, const JSONRPCRequest &request)
     }
     int64_t nTotalTokens = getTotalTokens(propertyId);
     std::string strCreationHash = sp.txid.GetHex();
-    std::string strTotalTokens = FormatMP(propertyId, nTotalTokens);
+    std::string strTotalTokens;
+    if (propertyId == OMNI_PROPERTY_WHC)    strTotalTokens = FormatDivisibleMP(nTotalTokens, PRICE_PRECISION);
+    else    strTotalTokens = FormatMP(propertyId, nTotalTokens);
 
     UniValue response(UniValue::VOBJ);
     response.push_back(Pair("propertyid", (uint64_t) propertyId));
@@ -948,6 +951,60 @@ UniValue whc_getproperty(const Config &config, const JSONRPCRequest &request)
         LOCK(cs_tally);
         response.push_back(Pair("freezingenabled", isFreezingEnabled(propertyId, currentBlock)));
     }
+    response.push_back(Pair("totaltokens", strTotalTokens));
+
+    return response;
+}
+
+UniValue whc_getactivecrowd(const Config &config, const JSONRPCRequest &request)
+{
+    if (request.fHelp || request.params.size() != 1)
+        throw runtime_error(
+                "whc_getactivecrowd address\n"
+                        "\nReturns details for about the active crowd with special address.\n"
+                        "\nArguments:\n"
+                        "1. address           (number, required) the special address\n"
+                        "\nResult:\n"
+                        "{\n"
+                        "  \"propertyid\" : n,                (number) the identifier\n"
+                        "  \"name\" : \"name\",                 (string) the name of the tokens\n"
+                        "  \"category\" : \"category\",         (string) the category used for the tokens\n"
+                        "  \"subcategory\" : \"subcategory\",   (string) the subcategory used for the tokens\n"
+                        "  \"data\" : \"information\",          (string) additional information or a description\n"
+                        "  \"url\" : \"uri\",                   (string) an URI, for example pointing to a website\n"
+                        "  \"property precision\" : [0, 8],        (boolean) whether the tokens are divisible\n"
+                        "  \"issuer\" : \"address\",            (string) the Bitcoin address of the issuer on record\n"
+                        "  \"creationtxid\" : \"hash\",         (string) the hex-encoded creation transaction hash\n"
+                        "  \"totaltokens\" : \"n.nnnnnnnn\"     (string) the total number of tokens in existence\n"
+                        "}\n"
+                        "\nExamples:\n"
+                + HelpExampleCli("whc_getactivecrowd", "qrutdtt3mwcutj8dusjkt9y75x0m07mukvs8v8g4tn")
+                + HelpExampleRpc("whc_getactivecrowd", "qrutdtt3mwcutj8dusjkt9y75x0m07mukvs8v8g4tn")
+        );
+
+    std::string address = ParseAddress(request.params[0]);
+
+    UniValue response(UniValue::VOBJ);
+    CMPCrowd* find = getCrowd(address);
+    if (find == NULL){
+        response.push_back("");
+        return response;
+    }
+    uint32_t propertyId = find->getPropertyId();
+    CMPSPInfo::Entry sp;
+    {
+        LOCK(cs_tally);
+        if (!_my_sps->getSP(propertyId, sp)) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Property identifier does not exist");
+        }
+    }
+    int64_t nTotalTokens = getTotalTokens(propertyId);
+    std::string strCreationHash = sp.txid.GetHex();
+    std::string strTotalTokens = FormatMP(propertyId, nTotalTokens);
+    response.push_back(Pair("propertyid", (uint64_t) propertyId));
+    PropertyToJSON(sp, response); // name, category, subcategory, data, url, divisible
+    response.push_back(Pair("issuer", sp.issuer));
+    response.push_back(Pair("creationtxid", strCreationHash));
     response.push_back(Pair("totaltokens", strTotalTokens));
 
     return response;
@@ -968,7 +1025,7 @@ UniValue whc_listproperties(const Config &config, const JSONRPCRequest &request)
             "    \"subcategory\" : \"subcategory\",   (string) the subcategory used for the tokens\n"
             "    \"data\" : \"information\",          (string) additional information or a description\n"
             "    \"url\" : \"uri\",                   (string) an URI, for example pointing to a website\n"
-            "    \"divisible\" : true|false         (boolean) whether the tokens are divisible\n"
+            "    \"property precision\" : [0, 8]      (int)  the property precision \n"
             "  },\n"
             "  ...\n"
             "]\n"
@@ -1026,7 +1083,6 @@ UniValue whc_getcrowdsale(const Config &config, const JSONRPCRequest &request)
             "  \"propertyiddesired\" : n,              (number) the identifier of the tokens eligible to participate in the crowdsale\n"
             "  \"tokensperunit\" : \"n.nnnnnnnn\",       (string) the amount of tokens granted per unit invested in the crowdsale\n"
             "  \"earlybonus\" : n,                     (number) an early bird bonus for participants in percent per week\n"
-            "  \"percenttoissuer\" : n,                (number) a percentage of tokens that will be granted to the issuer\n"
             "  \"starttime\" : nnnnnnnnnn,             (number) the start time of the of the crowdsale as Unix timestamp\n"
             "  \"deadline\" : nnnnnnnnnn,              (number) the deadline of the crowdsale as Unix timestamp\n"
             "  \"amountraised\" : \"n.nnnnnnnn\",        (string) the amount of tokens invested by participants\n"
@@ -1041,7 +1097,6 @@ UniValue whc_getcrowdsale(const Config &config, const JSONRPCRequest &request)
             "      \"txid\" : \"hash\",                      (string) the hex-encoded hash of participation transaction\n"
             "      \"amountsent\" : \"n.nnnnnnnn\",          (string) the amount of tokens invested by the participant\n"
             "      \"participanttokens\" : \"n.nnnnnnnn\",   (string) the tokens granted to the participant\n"
-            "      \"issuertokens\" : \"n.nnnnnnnn\"         (string) the tokens granted to the issuer as bonus\n"
             "    },\n"
             "    ...\n"
             "  ]\n"
@@ -1116,7 +1171,7 @@ UniValue whc_getcrowdsale(const Config &config, const JSONRPCRequest &request)
         std::string txid = it->first.GetHex();
         amountRaised += it->second.at(0);
         participanttx.push_back(Pair("txid", txid));
-        participanttx.push_back(Pair("amountsent", FormatByType(it->second.at(0), PRICE_PRICISION)));
+        participanttx.push_back(Pair("amountsent", FormatByType(it->second.at(0), PRICE_PRECISION)));
         participanttx.push_back(Pair("participanttokens", FormatByType(it->second.at(2), propertyIdType)));
         std::string sortKey = strprintf("%d-%s", it->second.at(1), txid);
         sortMap.insert(std::make_pair(sortKey, participanttx));
@@ -1128,11 +1183,11 @@ UniValue whc_getcrowdsale(const Config &config, const JSONRPCRequest &request)
     response.push_back(Pair("issuer", sp.issuer));
     response.push_back(Pair("propertyiddesired", (uint64_t) sp.property_desired));
 	response.push_back(Pair("precision", strPropertyType(sp.prop_type)));
-    response.push_back(Pair("tokensperunit", FormatDivisibleMP(sp.rate, PRICE_PRICISION, false)));
+    response.push_back(Pair("tokensperunit", FormatDivisibleMP(sp.rate, PRICE_PRECISION, false)));
     response.push_back(Pair("earlybonus", sp.early_bird));
     response.push_back(Pair("starttime", startTime));
     response.push_back(Pair("deadline", sp.deadline));
-    response.push_back(Pair("amountraised", FormatByType(amountRaised, PRICE_PRICISION)));
+    response.push_back(Pair("amountraised", FormatByType(amountRaised, PRICE_PRECISION)));
     response.push_back(Pair("tokensissued", FormatMP(propertyId, tokensIssued)));
     response.push_back(Pair("addedissuertokens", FormatMP(propertyId, sp.missedTokens)));
 
@@ -1726,7 +1781,7 @@ UniValue whc_listtransactions(const Config &config, const JSONRPCRequest &reques
             "2. count                (number, optional) show at most n transactions (default: 10)\n"
             "3. skip                 (number, optional) skip the first n transactions (default: 0)\n"
             "4. startblock           (number, optional) first block to begin the search (default: 0)\n"
-            "5. endblock             (number, optional) last block to include in the search (default: 999999)\n"
+            "5. endblock             (number, optional) last block to include in the search (default: 9999999)\n"
             "\nResult:\n"
             "[                                 (array of JSON objects)\n"
             "  {\n"
@@ -1764,7 +1819,7 @@ UniValue whc_listtransactions(const Config &config, const JSONRPCRequest &reques
     int64_t nStartBlock = 0;
     if (request.params.size() > 3) nStartBlock = request.params[3].get_int64();
     if (nStartBlock < 0) throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative start block");
-    int64_t nEndBlock = 999999;
+    int64_t nEndBlock = 9999999;
     if (request.params.size() > 4) nEndBlock = request.params[4].get_int64();
     if (nEndBlock < 0) throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative end block");
 
@@ -1857,7 +1912,6 @@ UniValue whc_getinfo(const Config &config, const JSONRPCRequest &request)
             "{\n"
             "  \"wormholeversion_int\" : xxxxxxx,       (number) client version as integer\n"
             "  \"wormholeversion\" : \"x.x.x.x-xxx\",     (string) client version\n"
-            "  \"wormholeversion\" : \"x.x.x.x-xxx\",   (string) client version (DEPRECIATED)\n"
             "  \"bitcoincoreversion\" : \"x.x.x\",        (string) Bitcoin Core version\n"
             "  \"block\" : nnnnnn,                      (number) index of the last processed block\n"
             "  \"blocktime\" : nnnnnnnnnn,              (number) timestamp of the last processed block\n"
@@ -1883,7 +1937,6 @@ UniValue whc_getinfo(const Config &config, const JSONRPCRequest &request)
     // provide the mastercore and bitcoin version
     infoResponse.push_back(Pair("wormholeversion_int", OMNICORE_VERSION));
     infoResponse.push_back(Pair("wormholeversion", OmniCoreVersion()));
-    infoResponse.push_back(Pair("wormholeversion", OmniCoreVersion()));
     infoResponse.push_back(Pair("bitcoincoreversion", BitcoinCoreVersion()));
 
     // provide the current block details
@@ -1900,7 +1953,6 @@ UniValue whc_getinfo(const Config &config, const JSONRPCRequest &request)
     infoResponse.push_back(Pair("blocktransactions", blockMPTransactions));
 
     // provide the number of trades completed
-    infoResponse.push_back(Pair("totaltrades", totalMPTrades));
     // provide the number of transactions parsed
     infoResponse.push_back(Pair("totaltransactions", totalMPTransactions));
 
@@ -2252,9 +2304,10 @@ static const CRPCCommand commands[] =
 //    { "omni layer (data retrieval)", "omni_getfeedistribution",        &omni_getfeedistribution,         false , {}},
 //    { "omni layer (data retrieval)", "omni_getfeedistributions",       &omni_getfeedistributions,        false , {}},
     { "omni layer (data retrieval)", "whc_getbalanceshash",           &whc_getbalanceshash,            false , {}},
+    { "omni layer (data retrieval)",  "whc_getactivecrowd",           &whc_getactivecrowd,            false , {}},
 #ifdef ENABLE_WALLET
     { "omni layer (data retrieval)", "whc_listtransactions",          &whc_listtransactions,           false , {}},
-    { "omni layer (data retrieval)", "whc_getfeeshare",               &whc_getfeeshare,                false , {}},
+//    { "omni layer (data retrieval)", "whc_getfeeshare",               &whc_getfeeshare,                false , {}},
     { "omni layer (configuration)",  "whc_setautocommit",             &whc_setautocommit,              true  , {}},
 #endif
     { "hidden",                      "mscrpc",                         &mscrpc,                          true  , {}},
