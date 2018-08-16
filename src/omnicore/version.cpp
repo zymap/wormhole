@@ -20,15 +20,15 @@ const std::string OmniCoreVersion()
 {
     if (OMNICORE_VERSION_BUILD) {
         return strprintf("%d.%d.%d.%d",
-                OMNICORE_VERSION_MAJOR,
-                OMNICORE_VERSION_MINOR,
-                OMNICORE_VERSION_PATCH,
-                OMNICORE_VERSION_BUILD);
+                WORMHOLE_VERSION_MAJOR,
+                WORMHOLE_VERSION_MINOR,
+                WORMHOLE_VERSION_PATCH,
+                WORMHOLE_VERSION_BUILD);
     } else {
         return strprintf("%d.%d.%d",
-                OMNICORE_VERSION_MAJOR,
-                OMNICORE_VERSION_MINOR,
-                OMNICORE_VERSION_PATCH);
+                WORMHOLE_VERSION_MAJOR,
+                WORMHOLE_VERSION_MINOR,
+                WORMHOLE_VERSION_PATCH);
     }
 }
 
